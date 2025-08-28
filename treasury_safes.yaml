@@ -152,6 +152,7 @@ rfox_distribution:
 thorchain:
   thorchain:
     treasury_safe: "thor122h9hlrugzdny9ct95z6g7afvpzu34s73uklju"
+    affiliate_name: "ss"
     status: "active"
     last_verified: "2025-08-28"
     notes: "THORChain treasury address"
@@ -167,6 +168,12 @@ chainflip:
     notes: "Chainflip treasury address"
     fee_collection: "active"
     rfox_distribution: "25% monthly to stakers"
+
+# Maya Protocol
+thorchain:
+  thorchain:
+    treasury_safe: "thor122h9hlrugzdny9ct95z6g7afvpzu34s73uklju"
+    affiliate_name: "ssmaya"
 
 # 0x Protocol
 zerox:

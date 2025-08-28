@@ -12,19 +12,6 @@ The ShapeShift Fee Listener System is a comprehensive multi-protocol, multi-chai
 2. **Fee Aggregators**: Collectors that consolidate fees across multiple chains
 3. **Treasury Safes**: Multi-signature wallets that securely hold collected fees
 4. **Analytics Engine**: Data processing and reporting system for business intelligence
-5. **Alert System**: Real-time notifications for significant fee events
-
-### Supported Protocols
-
-| Protocol | Status | Chains | Fee Collection |
-|----------|--------|--------|----------------|
-| **CoW Swap** | ✅ Active | Ethereum, Gnosis | Real-time |
-| **Portals** | ✅ Active | Ethereum | Real-time |
-| **Relay** | ✅ Active | Ethereum, Base | Real-time |
-| **ButterSwap** | ✅ Active | Base | Monitoring |
-| **THORChain** | ✅ Active | THORChain | Real-time |
-| **Chainflip** | ✅ Active | Chainflip | Real-time |
-| **0x Protocol** | ✅ Active | Ethereum | Real-time |
 
 ## 💰 Fee Collection Structure
 
@@ -57,7 +44,7 @@ The system maintains dedicated treasury safes across multiple blockchain network
 #### **Base Chain**
 - **Address**: `0x9c9aA90363630d4ab1D9dbF416cc3BBC8d3Ed502`
 - **Purpose**: Treasury for Base-based protocols
-- **Protocols**: Relay, ButterSwap
+- **Protocols**: Relay, ButterSwap (transactions run through this main treasury)
 
 #### **Additional Chains**
 - **Optimism**: `0x6268d07327f4fb7380732dc6d63d95F88c0E083b`
@@ -204,6 +191,309 @@ The system maintains dedicated treasury safes across multiple blockchain network
 - **Audit Trails**: Complete transaction history
 - **Tax Documentation**: Fee collection documentation
 - **Legal Entity Tracking**: Multi-entity support
+
+## 📚 Development Journal: What Was Tried & Why It Didn't Always Work
+
+### **Phase 1: Monolithic Approach (Initial Attempt)**
+**What We Built:**
+- Single Python service handling all protocols
+- Shared event parsing logic across CoW Swap, Relay, Portals
+- Unified database schema for all affiliate transactions
+
+**Why It Failed:**
+- **Brittle Architecture**: One protocol failure would crash the entire system
+- **Debugging Nightmare**: Impossible to isolate issues between protocols
+- **Memory Issues**: Large block scans would consume excessive RAM
+- **Single Point of Failure**: RPC rate limits would block all protocols simultaneously
+
+**Specific Problems:**
+```
+Error: 'bytes' object has no attribute 'encode'
+Cause: Web3.py compatibility issues when parsing different event formats
+Impact: Complete system failure, lost transactions
+```
+
+### **Phase 2: Modular Repository (Intermediate Solution)**
+**What We Built:**
+- Separate directories per protocol with shared utilities
+- Common ABI parsing and event detection
+- Shared CSV storage and block tracking
+
+**Why It Still Had Issues:**
+- **Shared Dependencies**: Version conflicts between protocol requirements
+- **Coupled Deployments**: Couldn't update one protocol without affecting others
+- **Resource Contention**: Multiple protocols competing for RPC connections
+- **Complex Error Handling**: Shared error handling made debugging difficult
+
+**Specific Problems:**
+```
+Error: Rate limit exceeded on Infura
+Cause: Multiple protocols hitting RPC endpoints simultaneously
+Impact: Missed blocks, incomplete transaction data
+```
+
+### **Phase 3: Standalone Services (Current Working Solution)**
+**What We Built:**
+- Independent services for each protocol
+- Protocol-specific configurations and error handling
+- Separate deployment and scaling capabilities
+
+**Why This Works Better:**
+- **Isolated Failures**: One protocol can fail without affecting others
+- **Independent Scaling**: Each protocol can be scaled based on its needs
+- **Easier Debugging**: Issues can be isolated to specific protocols
+- **Flexible Deployment**: Can update protocols independently
+
+### **Protocol-Specific Challenges & Solutions**
+
+#### **CoW Swap - The Success Story**
+**Initial Problems:**
+- Complex event structure with nested affiliate data
+- Multiple affiliate addresses across different chains
+- High transaction volume requiring efficient filtering
+
+**Solutions That Worked:**
+- Custom ABI parsing for affiliate fee events
+- Chain-specific affiliate address filtering
+- Block chunking to handle high volume
+- Persistent CSV-based block tracking
+
+**Why It Succeeded:**
+- Well-documented event structure
+- Consistent affiliate fee emission patterns
+- Active development community with clear examples
+
+#### **Relay - The Persistent Challenge**
+**Initial Problems:**
+- `'bytes' object has no attribute 'encode'` errors
+- Inconsistent event emission patterns
+- Complex cross-chain fee routing
+
+**What We Tried:**
+1. **Standard Web3.py parsing** → Failed with bytes encoding errors
+2. **Custom event decoder** → Worked but was fragile
+3. **Multiple ABI versions** → Inconsistent results
+4. **Event signature filtering** → Missed some transactions
+
+**Why It's Still Challenging:**
+- Web3.py compatibility issues with specific event formats
+- Events emitted differently across chains (Ethereum vs Base)
+- Complex fee routing logic that's hard to track
+
+**Current Status:**
+- ✅ **Working**: Basic event detection and parsing
+- ⚠️ **Issues**: Occasional parsing errors, missed transactions
+- 🔧 **Next Steps**: Implement more robust error handling
+
+#### **Portals - The Lucky One**
+**Why It Works Well:**
+- Leverages CoW Swap's proven listener design
+- Consistent event structure
+- Lower transaction volume
+
+**What We Learned:**
+- Reusing working patterns is more effective than reinventing
+- Protocol integration can simplify monitoring
+- Shared infrastructure reduces maintenance overhead
+
+#### **ButterSwap - The Quiet One**
+**Initial Problems:**
+- No affiliate activity detected
+- Unclear if the protocol is actually generating fees
+- Base chain RPC limitations
+
+**What We Tried:**
+1. **Direct contract monitoring** → No events found
+2. **Transaction scanning** → No affiliate patterns detected
+3. **Community research** → Limited documentation available
+
+**Current Understanding:**
+- Protocol may not be actively generating affiliate fees
+- Listener is operational but monitoring for future activity
+- May need to investigate if affiliate program is active
+
+### **Technical Challenges That Persisted**
+
+#### **1. Event Log Parsing Issues**
+**Problem:**
+```
+'bytes' object has no attribute 'encode'
+TypeError: Object of type AttributeDict is not JSON serializable
+```
+
+**Root Causes:**
+- Web3.py version compatibility issues
+- Different blockchain clients emit events differently
+- Protocol-specific event structures
+
+**Solutions Tried:**
+- **Explicit type conversion** → Worked for some cases
+- **Custom JSON encoders** → Complex and error-prone
+- **Event filtering** → Reduced errors but missed transactions
+- **Multiple parsing strategies** → Increased complexity
+
+#### **2. RPC Provider Limitations**
+**Problem:**
+- Free-tier rate limits (Infura: 100k requests/day, Alchemy: 300M compute units/month)
+- Large block scans would exceed limits
+- Provider outages would stop all monitoring
+
+**Solutions Implemented:**
+- **Provider rotation** → Reduced single point of failure
+- **Block chunking** → Stayed within rate limits
+- **Retry backoff** → Handled temporary failures
+- **Fallback providers** → Maintained uptime
+
+**Why It Still Causes Issues:**
+- Rate limits are still hit during high-volume periods
+- Provider rotation adds complexity
+- Some chains have limited RPC options
+
+#### **3. Cross-Chain Consistency**
+**Problem:**
+- Different EVM chains have different quirks
+- Event indexing varies between chains
+- Gas costs and block times differ significantly
+
+**Solutions Implemented:**
+- **Chain-specific configurations** → Handled differences
+- **Schema normalization** → Unified data storage
+- **Chain-aware error handling** → Better debugging
+
+**Remaining Challenges:**
+- Some chains have unreliable RPC endpoints
+- Event ordering can differ between chains
+- Gas estimation varies significantly
+
+### **Data Storage Evolution**
+
+#### **Phase 1: SQLite Database**
+**What We Built:**
+- Relational database with normalized tables
+- Complex queries for analytics
+- Transaction rollback capabilities
+
+**Why It Failed:**
+- **Performance Issues**: Slow queries on large datasets
+- **Complexity**: Schema changes required migrations
+- **File Corruption**: Database files would occasionally corrupt
+- **Debugging Difficulty**: Hard to inspect raw data
+
+#### **Phase 2: PostgreSQL**
+**What We Built:**
+- Production-grade database with proper indexing
+- ACID compliance and transaction support
+- Advanced querying capabilities
+
+**Why It Failed:**
+- **Infrastructure Overhead**: Required database server
+- **Connection Management**: Complex connection pooling
+- **Schema Evolution**: Migrations were time-consuming
+- **Performance**: Still slow for large block scans
+
+#### **Phase 3: CSV-First Approach (Current)**
+**What We Built:**
+- Simple CSV files for each protocol
+- Human-readable data format
+- Easy backup and version control
+- Simple data inspection and debugging
+
+**Why This Works Better:**
+- **Simplicity**: Easy to understand and modify
+- **Performance**: Fast read/write operations
+- **Debugging**: Can inspect data with any text editor
+- **Version Control**: Git tracks all changes
+- **Portability**: Easy to move between systems
+
+**Trade-offs:**
+- No complex queries or joins
+- Limited concurrent access
+- No built-in data validation
+- Manual backup management
+
+### **Monitoring & Alerting Evolution**
+
+#### **Phase 1: Basic Logging**
+**What We Built:**
+- Simple console output
+- Basic file logging
+- Error messages to stdout
+
+**Why It Failed:**
+- **No Persistence**: Lost information on restart
+- **No Alerts**: Had to manually check logs
+- **No Metrics**: Couldn't track performance
+- **No Aggregation**: Hard to see patterns
+
+#### **Phase 2: Structured Logging**
+**What We Built:**
+- JSON-formatted logs
+- Log rotation and compression
+- Error aggregation
+
+**Why It Still Had Issues:**
+- **No Real-time Monitoring**: Had to wait for log analysis
+- **No Alerting**: Still manual intervention required
+- **No Dashboard**: Hard to visualize system health
+
+#### **Phase 3: Comprehensive Monitoring (Current)**
+**What We Built:**
+- Real-time block processing metrics
+- Error rate tracking
+- Performance monitoring
+- Automated alerting
+
+**Current Capabilities:**
+- **Real-time Metrics**: Block processing rate, error rates
+- **Error Tracking**: Categorized by protocol and error type
+- **Performance Monitoring**: Response times, throughput
+- **Alerting**: Slack notifications for critical issues
+
+### **Lessons Learned & Best Practices**
+
+#### **1. Start Simple, Evolve Gradually**
+- **What Worked**: CSV files, simple event parsing, basic error handling
+- **What Didn't**: Complex databases, over-engineered architectures, premature optimization
+
+#### **2. Protocol-Specific Solutions Beat Generic Ones**
+- **What Worked**: Custom ABIs, protocol-specific error handling, tailored configurations
+- **What Didn't**: Universal event parsers, generic error handling, one-size-fits-all configs
+
+#### **3. Monitoring Is Critical**
+- **What Worked**: Real-time metrics, error tracking, performance monitoring
+- **What Didn't**: Basic logging, manual checking, reactive debugging
+
+#### **4. Data Storage Should Match Use Case**
+- **What Worked**: CSV for simple data, human-readable formats, easy debugging
+- **What Didn't**: Complex databases for simple data, binary formats, hard-to-inspect storage
+
+#### **5. Error Handling Must Be Robust**
+- **What Worked**: Graceful degradation, retry logic, fallback mechanisms
+- **What Didn't**: Fail-fast approaches, no retry logic, single point of failure
+
+### **Current Status & Next Steps**
+
+#### **What's Working Well:**
+- ✅ **CoW Swap**: 1000+ block scans, reliable fee detection
+- ✅ **Portals**: Leveraging CoW Swap's proven approach
+- ✅ **Data Storage**: CSV-based system with good performance
+- ✅ **Monitoring**: Real-time metrics and alerting
+- ✅ **Error Handling**: Robust retry and fallback mechanisms
+
+#### **What Still Needs Work:**
+- ⚠️ **Relay**: Parsing errors, missed transactions
+- ⚠️ **ButterSwap**: No affiliate activity detected
+- ⚠️ **Cross-Chain**: Some chains have reliability issues
+- ⚠️ **Performance**: Large block scans can be slow
+
+#### **Next Development Priorities:**
+1. **Fix Relay Parsing**: Implement more robust event parsing
+2. **Improve Performance**: Optimize block scanning algorithms
+3. **Enhanced Monitoring**: Better visualization and alerting
+4. **Protocol Expansion**: Add support for new protocols
+5. **Data Analytics**: Better insights and reporting
+
+This development journal shows the evolution from a simple, failing monolithic system to a robust, scalable microservices architecture. The key insight is that **simplicity and protocol-specific solutions consistently outperformed complex, generic approaches**.
 
 ## 🚀 Getting Started
 

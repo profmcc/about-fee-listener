@@ -44,7 +44,11 @@ The system maintains dedicated treasury safes across multiple blockchain network
 #### **Base Chain**
 - **Address**: `0x9c9aA90363630d4ab1D9dbF416cc3BBC8d3Ed502`
 - **Purpose**: Treasury for Base-based protocols
-- **Protocols**: Relay, ButterSwap (transactions run through this main treasury)
+- **Protocols**: Relay
+
+#### **Butterswap Chain**
+- **Address**: `0x35339070f178dC4119732982C23F5a8d88D3f8a3`
+- **Protocols**: Butterswap
 
 #### **Additional Chains**
 - **Optimism**: `0x6268d07327f4fb7380732dc6d63d95F88c0E083b`
@@ -84,7 +88,7 @@ The system maintains dedicated treasury safes across multiple blockchain network
 ### Monitoring Frequency
 
 - **Fee Collection**: Real-time (block-by-block)
-- **Balance Updates**: Every block
+- **Balance Updates**: Every block (ideally/ but daily is sufficient)
 - **Aggregation**: Daily and monthly
 - **Reporting**: Daily summaries + monthly analytics
 
@@ -105,32 +109,6 @@ The system maintains dedicated treasury safes across multiple blockchain network
 - Affiliate address involved
 - Treasury safe destination
 - Timestamp and gas costs
-
-## 🚨 Alert System
-
-### Alert Types
-
-1. **High-Value Transactions**
-   - Threshold: >$10,000 USD equivalent
-   - Notification: Immediate to treasury team
-   - Action: Manual verification required
-
-2. **Anomaly Detection**
-   - Unusual fee patterns
-   - Unexpected protocol activity
-   - Chain-specific issues
-
-3. **Balance Alerts**
-   - Low treasury balances
-   - Failed transactions
-   - Multi-sig threshold issues
-
-### Notification Channels
-
-- **Slack**: Real-time alerts for critical events
-- **Email**: Daily summaries and monthly reports
-- **Dashboard**: Live monitoring interface
-- **API**: Webhook notifications for integrations
 
 ## 🔧 Technical Implementation
 
@@ -159,12 +137,7 @@ The system maintains dedicated treasury safes across multiple blockchain network
    - Protocol-specific revenue breakdown
    - Chain-specific performance metrics
 
-2. **Treasury Health**
-   - Multi-chain balance overview
-   - Fee collection efficiency
-   - Distribution timing and amounts
-
-3. **Protocol Analytics**
+2. **Protocol Analytics**
    - Usage patterns and trends
    - Fee optimization opportunities
    - Integration performance metrics
@@ -175,22 +148,6 @@ The system maintains dedicated treasury safes across multiple blockchain network
 - **Monthly Reports**: Comprehensive treasury analysis
 - **Quarterly Reviews**: Strategic insights and recommendations
 - **Annual Planning**: Revenue projections and budget planning
-
-## 🛡️ Security & Compliance
-
-### Security Measures
-
-- **Multi-Signature Wallets**: Required for all treasury operations
-- **Access Control**: Role-based permissions for system access
-- **Audit Logging**: Complete transaction history tracking
-- **Encryption**: Sensitive data encryption at rest and in transit
-
-### Compliance Features
-
-- **Regulatory Reporting**: Automated compliance reporting
-- **Audit Trails**: Complete transaction history
-- **Tax Documentation**: Fee collection documentation
-- **Legal Entity Tracking**: Multi-entity support
 
 ## 📚 Development Journal: What Was Tried & Why It Didn't Always Work
 
@@ -299,7 +256,7 @@ Impact: Missed blocks, incomplete transaction data
 #### **ButterSwap - The Quiet One**
 **Initial Problems:**
 - No affiliate activity detected
-- Unclear if the protocol is actually generating fees
+- clear that the protocol is actually generating fees--we just can't see them on-chain
 - Base chain RPC limitations
 
 **What We Tried:**
@@ -308,9 +265,9 @@ Impact: Missed blocks, incomplete transaction data
 3. **Community research** → Limited documentation available
 
 **Current Understanding:**
-- Protocol may not be actively generating affiliate fees
+- Protocol may not be flagging fees in any on-chain/public way.
 - Listener is operational but monitoring for future activity
-- May need to investigate if affiliate program is active
+- May need to investigate how affiliate partners are tracked
 
 ### **Technical Challenges That Persisted**
 
